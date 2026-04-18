@@ -1,3 +1,11 @@
 spring:
   application:
     name: payment-service
+  data:
+    mongodb:
+      port: 27017
+      username: ${DB_USERNAME}
+      password: ${DB_PASSWORD}
+      database: ${DB_NAME}
+      authentication-database: admin
+      auto-index-creation: true
