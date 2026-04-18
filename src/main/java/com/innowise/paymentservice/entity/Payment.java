@@ -1,0 +1,30 @@
+package com.innowise.paymentservice.entity;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
+
+import java.time.LocalDateTime;
+
+@Document(collection = "payments")
+public class Payment {
+
+    @Id
+    private String id;
+
+    @Indexed
+    @Field(name = "user_id")
+    private Long userId;
+
+    @Indexed(unique = true)
+    @Field(name = "order_id")
+    private Long orderId;
+
+    private Status status;
+
+    private LocalDateTime timestamp;
+
+    @Field(name = "payment_amount")
+    private Long paymentAmount;
+}
