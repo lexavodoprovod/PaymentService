@@ -1,4 +1,13 @@
 package com.innowise.paymentservice.dto.response;
 
-public class PaymentResponseDto {
-}
+import com.innowise.paymentservice.entity.Status;
+
+public record PaymentResponseDto (
+        Long userId,
+
+        Long orderId,
+
+        Status status,
+
+        Long paymentAmount
+){}
