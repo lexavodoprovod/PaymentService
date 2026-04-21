@@ -5,6 +5,8 @@ import com.innowise.paymentservice.repository.CustomPaymentRepository;
 import com.mongodb.client.result.UpdateResult;
 import lombok.RequiredArgsConstructor;
 import org.bson.Document;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
@@ -13,6 +15,7 @@ import org.springframework.data.mongodb.core.aggregation.MatchOperation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
+import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -50,7 +53,7 @@ public class CustomPaymentRepositoryImpl implements CustomPaymentRepository {
     }
 
     @Override
-    public List<Payment> getPaymentsByUserIdOrOrderIdOrStatus(Long userId, Long orderId, String status) {
+    public Page<Payment> getPaymentsByUserIdOrOrderIdOrStatus(Long userId, Long orderId, String status, Pageable pageable) {
 
         Criteria mainCriteria = Criteria.where("deleted").is(false);
 
@@ -72,7 +75,15 @@ public class CustomPaymentRepositoryImpl implements CustomPaymentRepository {
             mainCriteria.orOperator(criteriaList.toArray(new Criteria[0]));
         }
 
-        return mongoTemplate.find(new Query(mainCriteria), Payment.class);
+        Query query = new Query(mainCriteria).with(pageable);
+
+        List<Payment> payments = mongoTemplate.find(query, Payment.class);
+
+        return PageableExecutionUtils.getPage(
+                payments,
+                pageable,
+                () -> mongoTemplate.count(Query.of(query).limit(-1).skip(-1), Payment.class)
+        );
     }
 
     @Override
