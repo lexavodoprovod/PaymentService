@@ -9,4 +9,5 @@ public interface CustomPaymentRepository {
 
     Long getTotalSumForDateRange(LocalDateTime start, LocalDateTime end, Long userId);
     List<Payment> getPaymentsByUserIdOrOrderIdOrStatus(Long userId, Long orderId, String status);
+    boolean softDelete(String id);
 }

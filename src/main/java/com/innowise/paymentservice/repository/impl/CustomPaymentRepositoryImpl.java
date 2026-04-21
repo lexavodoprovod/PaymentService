@@ -2,6 +2,7 @@ package com.innowise.paymentservice.repository.impl;
 
 import com.innowise.paymentservice.entity.Payment;
 import com.innowise.paymentservice.repository.CustomPaymentRepository;
+import com.mongodb.client.result.UpdateResult;
 import lombok.RequiredArgsConstructor;
 import org.bson.Document;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -11,6 +12,7 @@ import org.springframework.data.mongodb.core.aggregation.GroupOperation;
 import org.springframework.data.mongodb.core.aggregation.MatchOperation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -26,7 +28,8 @@ public class CustomPaymentRepositoryImpl implements CustomPaymentRepository {
     @Override
     public Long getTotalSumForDateRange(LocalDateTime start, LocalDateTime end, Long userId) {
 
-        Criteria criteria = Criteria.where("timestamp").gte(start).lte(end);
+        Criteria criteria = Criteria.where("timestamp").gte(start).lte(end)
+                .and("deleted").is(false);
 
         if(userId != null){
             criteria = criteria.and("user_id").is(userId);
@@ -36,19 +39,20 @@ public class CustomPaymentRepositoryImpl implements CustomPaymentRepository {
 
         GroupOperation groupStage = Aggregation.group().sum("payment_amount").as("total");
 
-        Aggregation aggregation = Aggregation.newAggregation(groupStage, matchStage);
+        Aggregation aggregation = Aggregation.newAggregation(matchStage, groupStage);
 
         AggregationResults<Document> result = mongoTemplate.aggregate(aggregation, "payments", Document.class);
 
         return result.getUniqueMappedResult() != null
-                ? result.getUniqueMappedResult().getInteger("total").longValue()
+                ? result.getUniqueMappedResult().getLong("total")
                 : 0L;
 
     }
 
     @Override
     public List<Payment> getPaymentsByUserIdOrOrderIdOrStatus(Long userId, Long orderId, String status) {
-        Query query = new Query();
+
+        Criteria mainCriteria = Criteria.where("deleted").is(false);
 
         List<Criteria> criteriaList = new ArrayList<>();
 
@@ -65,9 +69,23 @@ public class CustomPaymentRepositoryImpl implements CustomPaymentRepository {
         }
 
         if(!criteriaList.isEmpty()){
-            query.addCriteria(new Criteria().orOperator(criteriaList.toArray(new Criteria[0])));
+            mainCriteria.orOperator(criteriaList.toArray(new Criteria[0]));
         }
 
-        return mongoTemplate.find(query, Payment.class);
+        return mongoTemplate.find(new Query(mainCriteria), Payment.class);
+    }
+
+    @Override
+    public boolean softDelete(String id) {
+        Criteria criteria = Criteria.where("id").is(id);
+
+        Query query = new Query(criteria);
+
+        Update update = new Update();
+        update.set("deleted_at", LocalDateTime.now())
+                .set("deleted", true);
+
+        UpdateResult result = mongoTemplate.updateFirst(query, update, Payment.class);
+        return result.getModifiedCount() > 0;
     }
 }

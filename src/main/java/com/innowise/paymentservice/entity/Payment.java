@@ -30,8 +30,17 @@ public class Payment {
 
     private Status status;
 
-    private LocalDateTime timestamp;
+    @Field(name = "created_at")
+    private LocalDateTime createdAt;
 
     @Field(name = "payment_amount")
     private Long paymentAmount;
+
+    @Builder.Default
+    @Field(name = "deleted")
+    @Indexed
+    private boolean isDeleted = false;
+
+    @Field(name = "deleted_at")
+    private LocalDateTime deletedAt;
 }
