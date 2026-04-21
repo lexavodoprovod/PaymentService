@@ -9,13 +9,12 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Document(collection = "payments")
-public class Payment {
+public class Payment extends BaseEntity{
 
     @Id
     private String id;
@@ -30,9 +29,6 @@ public class Payment {
 
     private Status status;
 
-    @Field(name = "created_at")
-    private LocalDateTime createdAt;
-
     @Field(name = "payment_amount")
     private Long paymentAmount;
 
@@ -40,7 +36,4 @@ public class Payment {
     @Field(name = "deleted")
     @Indexed
     private boolean isDeleted = false;
-
-    @Field(name = "deleted_at")
-    private LocalDateTime deletedAt;
 }
