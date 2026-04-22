@@ -89,8 +89,25 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public Page<PaymentResponseDto> findPaymentsByUserIdOrOrderIdOrStatus(Long userId, Long orderId, String status, Pageable pageable) {
-        return null;
+    public Page<PaymentResponseDto> findPaymentsByUserIdOrOrderIdOrStatus(
+            Long userId,
+            Long orderId,
+            String status,
+            Pageable pageable
+    ) {
+
+        if(pageable == null){
+            throw new PaymentNullParameterException();
+        }
+
+        Page<Payment> paymentsPage = customPaymentRepository.getPaymentsByUserIdOrOrderIdOrStatus(
+                userId,
+                orderId,
+                status,
+                pageable
+        );
+
+        return paymentsPage.map(paymentMapper::toResponseDto);
     }
 
     @Override

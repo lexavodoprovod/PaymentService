@@ -296,6 +296,91 @@ class PaymentServiceImplTest {
         }
     }
 
+    @Nested
+    @DisplayName("Find Payments By UserId, OrderId or Status Tests")
+    class FindPaymentsByUserIdOrOrderIdOrStatusTests {
+
+        @Test
+        @DisplayName("Should throw PaymentNullParameterException when pageable is null")
+        void shouldThrowExceptionWhenPageableIsNull() {
+            assertThrows(PaymentNullParameterException.class, () ->
+                    paymentService.findPaymentsByUserIdOrOrderIdOrStatus(1L, 1L, "SUCCESS", null)
+            );
+
+            verifyNoInteractions(customPaymentRepository, paymentMapper);
+        }
+
+        @Test
+        @DisplayName("Should return empty Page when custom repository returns empty")
+        void shouldReturnEmptyPageWhenNoMatchesFound() {
+            Pageable pageable = PageRequest.of(0, 10);
+            Long userId = 1L;
+            Long orderId = 2L;
+            String status = "PENDING";
+
+            when(customPaymentRepository.getPaymentsByUserIdOrOrderIdOrStatus(userId, orderId, status, pageable))
+                    .thenReturn(Page.empty());
+
+            Page<PaymentResponseDto> result = paymentService.findPaymentsByUserIdOrOrderIdOrStatus(userId, orderId, status, pageable);
+
+            assertNotNull(result);
+            assertTrue(result.isEmpty());
+
+            verify(customPaymentRepository).getPaymentsByUserIdOrOrderIdOrStatus(userId, orderId, status, pageable);
+            verifyNoInteractions(paymentMapper);
+        }
+
+        @Test
+        @DisplayName("Should return Page of DTOs when custom repository finds results")
+        void shouldReturnPageOfDtosWhenPaymentsExist() {
+            Pageable pageable = PageRequest.of(0, 10);
+            Long userId = 1L;
+            List<Payment> payments = List.of(payment);
+            Page<Payment> paymentPage = new PageImpl<>(payments, pageable, payments.size());
+
+            PaymentResponseDto responseDto = new PaymentResponseDto(
+                    payment.getUserId(),
+                    payment.getOrderId(),
+                    payment.getStatus(),
+                    payment.getPaymentAmount()
+            );
+
+            when(customPaymentRepository.getPaymentsByUserIdOrOrderIdOrStatus(userId, null, null, pageable))
+                    .thenReturn(paymentPage);
+            when(paymentMapper.toResponseDto(payment)).thenReturn(responseDto);
+
+            Page<PaymentResponseDto> result = paymentService.findPaymentsByUserIdOrOrderIdOrStatus(userId, null, null, pageable);
+
+            assertNotNull(result);
+            assertEquals(1, result.getContent().size());
+            assertEquals(responseDto, result.getContent().getFirst());
+
+            verify(customPaymentRepository).getPaymentsByUserIdOrOrderIdOrStatus(userId, null, null, pageable);
+            verify(paymentMapper).toResponseDto(payment);
+        }
+
+        @Test
+        @DisplayName("Should pass all parameters correctly to custom repository")
+        void shouldPassAllParametersToRepository() {
+            Pageable pageable = PageRequest.of(0, 5);
+            Long userId = 99L;
+            Long orderId = 88L;
+            String status = "FAILED";
+
+            when(customPaymentRepository.getPaymentsByUserIdOrOrderIdOrStatus(any(), any(), any(), any()))
+                    .thenReturn(Page.empty());
+
+            paymentService.findPaymentsByUserIdOrOrderIdOrStatus(userId, orderId, status, pageable);
+
+            verify(customPaymentRepository).getPaymentsByUserIdOrOrderIdOrStatus(
+                    eq(userId),
+                    eq(orderId),
+                    eq(status),
+                    eq(pageable)
+            );
+        }
+    }
+
 
 
 
