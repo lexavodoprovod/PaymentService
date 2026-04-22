@@ -10,4 +10,7 @@ public final class ExceptionMessage {
 
     public static final String PAYMENT_SOFT_DELETE_EXCEPTION_MESSAGE =
             "Could not delete payment with id: %s";
+
+    public static final String PAYMENT_ALREADY_EXIST_EXCEPTION_MESSAGE =
+            "Payment with this order id [%s] already exists";
 }

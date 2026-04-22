@@ -17,4 +17,7 @@ public interface PaymentRepository extends MongoRepository<Payment, String> {
 
     @Query("{ 'deleted' : false}")
     Page<Payment> findAll(Pageable pageable);
+
+    @Query("{ 'deleted' : false}")
+    Optional<Payment> findByOrderId(Long orderId);
 }
