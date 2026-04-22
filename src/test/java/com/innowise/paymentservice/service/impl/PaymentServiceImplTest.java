@@ -381,6 +381,63 @@ class PaymentServiceImplTest {
         }
     }
 
+    @Nested
+    @DisplayName("Soft Delete Payment Tests")
+    class SoftDeletePaymentTests {
+
+        @Test
+        @DisplayName("Should throw PaymentNullParameterException when id is null")
+        void shouldThrowExceptionWhenIdIsNull() {
+            assertThrows(PaymentNullParameterException.class, () ->
+                    paymentService.softDeletePayment(null)
+            );
+
+            verifyNoInteractions(paymentRepository, customPaymentRepository);
+        }
+
+        @Test
+        @DisplayName("Should throw PaymentNotFoundException when payment does not exist")
+        void shouldThrowExceptionWhenPaymentNotFound() {
+            String id = "non-existent-id";
+            when(paymentRepository.findById(id)).thenReturn(Optional.empty());
+
+            assertThrows(PaymentNotFoundException.class, () ->
+                    paymentService.softDeletePayment(id)
+            );
+
+            verify(paymentRepository).findById(id);
+            verifyNoInteractions(customPaymentRepository);
+        }
+
+        @Test
+        @DisplayName("Should return true when soft delete is successful")
+        void shouldReturnTrueWhenSoftDeleteIsSuccessful() {
+            String id = "Mongo_ID";
+            when(paymentRepository.findById(id)).thenReturn(Optional.of(payment));
+            when(customPaymentRepository.softDelete(id)).thenReturn(true);
+
+            Boolean result = paymentService.softDeletePayment(id);
+
+            assertTrue(result);
+            verify(paymentRepository).findById(id);
+            verify(customPaymentRepository).softDelete(id);
+        }
+
+        @Test
+        @DisplayName("Should return false when soft delete fails in repository")
+        void shouldReturnFalseWhenSoftDeleteFails() {
+            String id = "Mongo_ID";
+            when(paymentRepository.findById(id)).thenReturn(Optional.of(payment));
+            when(customPaymentRepository.softDelete(id)).thenReturn(false);
+
+            Boolean result = paymentService.softDeletePayment(id);
+
+            assertFalse(result);
+            verify(paymentRepository).findById(id);
+            verify(customPaymentRepository).softDelete(id);
+        }
+    }
+
 
 
 

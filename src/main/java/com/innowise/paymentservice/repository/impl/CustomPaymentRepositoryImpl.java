@@ -93,8 +93,7 @@ public class CustomPaymentRepositoryImpl implements CustomPaymentRepository {
         Query query = new Query(criteria);
 
         Update update = new Update();
-        update.set("deleted_at", LocalDateTime.now())
-                .set("deleted", true);
+        update.set("deleted", true);
 
         UpdateResult result = mongoTemplate.updateFirst(query, update, Payment.class);
         return result.getModifiedCount() > 0;

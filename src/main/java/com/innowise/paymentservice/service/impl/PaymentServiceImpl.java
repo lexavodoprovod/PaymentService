@@ -117,6 +117,13 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public Boolean softDeletePayment(String paymentId) {
-        return null;
+        if(paymentId == null){
+            throw new PaymentNullParameterException();
+        }
+
+        paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new PaymentNotFoundException(paymentId));
+
+        return customPaymentRepository.softDelete(paymentId);
     }
 }
