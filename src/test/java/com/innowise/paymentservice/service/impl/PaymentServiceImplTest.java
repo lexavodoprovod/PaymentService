@@ -6,6 +6,7 @@ import com.innowise.paymentservice.dto.response.PaymentResponseDto;
 import com.innowise.paymentservice.entity.Payment;
 import com.innowise.paymentservice.entity.Status;
 import com.innowise.paymentservice.exception.payment.PaymentAlreadyExistException;
+import com.innowise.paymentservice.exception.payment.PaymentNotFoundException;
 import com.innowise.paymentservice.exception.payment.PaymentNullParameterException;
 import com.innowise.paymentservice.mapper.PaymentMapper;
 import com.innowise.paymentservice.repository.PaymentRepository;
@@ -177,6 +178,60 @@ class PaymentServiceImplTest {
             paymentService.createPayment(paymentRequestDto);
 
             verify(paymentRepository).save(argThat(p -> p.getStatus() == Status.FAILED));
+        }
+    }
+
+    @Nested
+    @DisplayName("Find Payment By Id Tests")
+    class FindPaymentByIdTests {
+
+        @Test
+        @DisplayName("Should throw PaymentNullParameterException when id is null")
+        void shouldThrowExceptionWhenIdIsNull() {
+            assertThrows(PaymentNullParameterException.class, () ->
+                    paymentService.findPaymentById(null)
+            );
+
+            verifyNoInteractions(paymentRepository, paymentMapper);
+        }
+
+        @Test
+        @DisplayName("Should throw PaymentNotFoundException when payment does not exist")
+        void shouldThrowExceptionWhenPaymentNotFound() {
+            String id = "non-existent-id";
+            when(paymentRepository.findById(id)).thenReturn(Optional.empty());
+
+            assertThrows(PaymentNotFoundException.class, () ->
+                    paymentService.findPaymentById(id)
+            );
+
+            verify(paymentRepository).findById(id);
+            verifyNoInteractions(paymentMapper);
+        }
+
+        @Test
+        @DisplayName("Should return PaymentResponseDto when payment exists")
+        void shouldReturnResponseDtoWhenPaymentExists() {
+            String id = "Mongo_ID";
+            when(paymentRepository.findById(id)).thenReturn(Optional.of(payment));
+
+            PaymentResponseDto expectedResponse = new PaymentResponseDto(
+                    payment.getUserId(),
+                    payment.getOrderId(),
+                    payment.getStatus(),
+                    payment.getPaymentAmount()
+            );
+
+            when(paymentMapper.toResponseDto(payment)).thenReturn(expectedResponse);
+
+            PaymentResponseDto actualResponse = paymentService.findPaymentById(id);
+
+            assertNotNull(actualResponse);
+            assertEquals(expectedResponse.orderId(), actualResponse.orderId());
+            assertEquals(expectedResponse.status(), actualResponse.status());
+
+            verify(paymentRepository).findById(id);
+            verify(paymentMapper).toResponseDto(payment);
         }
     }
 

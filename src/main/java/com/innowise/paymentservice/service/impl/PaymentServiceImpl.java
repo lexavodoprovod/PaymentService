@@ -6,6 +6,7 @@ import com.innowise.paymentservice.dto.response.PaymentResponseDto;
 import com.innowise.paymentservice.entity.Payment;
 import com.innowise.paymentservice.entity.Status;
 import com.innowise.paymentservice.exception.payment.PaymentAlreadyExistException;
+import com.innowise.paymentservice.exception.payment.PaymentNotFoundException;
 import com.innowise.paymentservice.exception.payment.PaymentNullParameterException;
 import com.innowise.paymentservice.mapper.PaymentMapper;
 import com.innowise.paymentservice.repository.PaymentRepository;
@@ -65,7 +66,15 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public PaymentResponseDto findPaymentById(String paymentId) {
-        return null;
+
+        if(paymentId == null){
+            throw new PaymentNullParameterException();
+        }
+
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new PaymentNotFoundException(paymentId));
+
+        return paymentMapper.toResponseDto(payment);
     }
 
     @Override
