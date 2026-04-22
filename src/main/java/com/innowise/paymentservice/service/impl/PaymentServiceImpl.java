@@ -79,7 +79,13 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public Page<PaymentResponseDto> findAllPayments(Pageable pageable) {
-        return null;
+        if(pageable == null){
+            throw new PaymentNullParameterException();
+        }
+
+        Page<Payment> paymentsPage = paymentRepository.findAll(pageable);
+
+        return paymentsPage.map(paymentMapper::toResponseDto);
     }
 
     @Override

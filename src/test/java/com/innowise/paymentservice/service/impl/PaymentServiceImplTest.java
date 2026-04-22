@@ -19,6 +19,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -232,6 +236,63 @@ class PaymentServiceImplTest {
 
             verify(paymentRepository).findById(id);
             verify(paymentMapper).toResponseDto(payment);
+        }
+    }
+
+    @Nested
+    @DisplayName("Find All Payments Tests")
+    class FindAllPaymentsTests {
+
+        @Test
+        @DisplayName("Should throw PaymentNullParameterException when pageable is null")
+        void shouldThrowExceptionWhenPageableIsNull() {
+            assertThrows(PaymentNullParameterException.class, () ->
+                    paymentService.findAllPayments(null)
+            );
+
+            verifyNoInteractions(paymentRepository, paymentMapper);
+        }
+
+        @Test
+        @DisplayName("Should return empty Page when no payments found")
+        void shouldReturnEmptyPageWhenNoPaymentsExist() {
+            Pageable pageable = PageRequest.of(0, 10);
+            when(paymentRepository.findAll(pageable)).thenReturn(Page.empty());
+
+            Page<PaymentResponseDto> result = paymentService.findAllPayments(pageable);
+
+            assertNotNull(result);
+            assertTrue(result.isEmpty());
+
+            verify(paymentRepository).findAll(pageable);
+            verifyNoInteractions(paymentMapper);
+        }
+
+        @Test
+        @DisplayName("Should return Page of DTOs when payments exist")
+        void shouldReturnPageOfDtosWhenPaymentsExist() {
+            Pageable pageable = PageRequest.of(0, 10);
+            List<Payment> payments = List.of(payment);
+            Page<Payment> paymentPage = new PageImpl<>(payments, pageable, payments.size());
+
+            PaymentResponseDto responseDto = new PaymentResponseDto(
+                    payment.getUserId(),
+                    payment.getOrderId(),
+                    payment.getStatus(),
+                    payment.getPaymentAmount()
+            );
+
+            when(paymentRepository.findAll(pageable)).thenReturn(paymentPage);
+            when(paymentMapper.toResponseDto(any(Payment.class))).thenReturn(responseDto);
+
+            Page<PaymentResponseDto> result = paymentService.findAllPayments(pageable);
+
+            assertNotNull(result);
+            assertEquals(1, result.getContent().size());
+            assertEquals(responseDto, result.getContent().get(0));
+
+            verify(paymentRepository).findAll(pageable);
+            verify(paymentMapper, times(1)).toResponseDto(payment);
         }
     }
 
