@@ -31,14 +31,27 @@ public class CustomPaymentRepositoryImpl implements CustomPaymentRepository {
     @Override
     public Long getTotalSumForDateRange(LocalDateTime start, LocalDateTime end, Long userId) {
 
-        Criteria criteria = Criteria.where("timestamp").gte(start).lte(end)
-                .and("deleted").is(false);
+        List<Criteria> criteriaList = new ArrayList<>();
+        criteriaList.add(Criteria.where("deleted").is(false));
 
-        if(userId != null){
-            criteria = criteria.and("user_id").is(userId);
+        if(start != null){
+            criteriaList.add(Criteria.where("timestamp").gte(start));
         }
 
-        MatchOperation matchStage = Aggregation.match(criteria);
+        if(end != null){
+            criteriaList.add(Criteria.where("timestamp").lte(end));
+        }
+
+        if(userId != null){
+            criteriaList.add(Criteria.where("user_id").is(userId));
+        }
+
+        Criteria mainCriteria = new Criteria();
+        if (!criteriaList.isEmpty()) {
+            mainCriteria.andOperator(criteriaList.toArray(new Criteria[0]));
+        }
+
+        MatchOperation matchStage = Aggregation.match(mainCriteria);
 
         GroupOperation groupStage = Aggregation.group().sum("payment_amount").as("total");
 

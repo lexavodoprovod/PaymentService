@@ -17,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import static com.innowise.paymentservice.constant.SettingsForNumberClient.*;
 
@@ -108,6 +109,11 @@ public class PaymentServiceImpl implements PaymentService {
         );
 
         return paymentsPage.map(paymentMapper::toResponseDto);
+    }
+
+    @Override
+    public Long getTotalSumForDateRange(LocalDateTime start, LocalDateTime end, Long userId) {
+        return customPaymentRepository.getTotalSumForDateRange(start, end, userId);
     }
 
     @Override

@@ -24,6 +24,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -378,6 +379,40 @@ class PaymentServiceImplTest {
                     eq(status),
                     eq(pageable)
             );
+        }
+    }
+
+    @Nested
+    @DisplayName("Get Total Sum For Date Range Tests")
+    class GetTotalSumForDateRangeTests {
+
+        @Test
+        @DisplayName("Should return total sum from custom repository")
+        void shouldReturnTotalSumFromRepository() {
+            LocalDateTime start = LocalDateTime.now().minusDays(1);
+            LocalDateTime end = LocalDateTime.now();
+            Long userId = 123L;
+            Long expectedSum = 5000L;
+
+            when(customPaymentRepository.getTotalSumForDateRange(start, end, userId))
+                    .thenReturn(expectedSum);
+
+            Long actualSum = paymentService.getTotalSumForDateRange(start, end, userId);
+
+            assertEquals(expectedSum, actualSum);
+            verify(customPaymentRepository).getTotalSumForDateRange(start, end, userId);
+        }
+
+        @Test
+        @DisplayName("Should return null or zero when repository returns it")
+        void shouldReturnNullWhenRepositoryReturnsNull() {
+            when(customPaymentRepository.getTotalSumForDateRange(any(), any(), any()))
+                    .thenReturn(null);
+
+            Long result = paymentService.getTotalSumForDateRange(null, null, null);
+
+            assertNull(result);
+            verify(customPaymentRepository).getTotalSumForDateRange(null, null, null);
         }
     }
 
