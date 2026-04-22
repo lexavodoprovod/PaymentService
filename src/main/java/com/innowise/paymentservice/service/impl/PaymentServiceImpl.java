@@ -112,7 +112,18 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public PaymentResponseDto changePaymentStatus(String paymentId, Status status) {
-        return null;
+        if(paymentId == null || status == null){
+            throw new PaymentNullParameterException();
+        }
+
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new PaymentNotFoundException(paymentId));
+
+        payment.setStatus(status);
+
+        Payment updatedPayment = paymentRepository.save(payment);
+
+        return paymentMapper.toResponseDto(updatedPayment);
     }
 
     @Override

@@ -437,6 +437,70 @@ class PaymentServiceImplTest {
             verify(customPaymentRepository).softDelete(id);
         }
     }
+    @Nested
+    @DisplayName("Change Payment Status Tests")
+    class ChangePaymentStatusTests {
+
+        @Test
+        @DisplayName("Should throw PaymentNullParameterException when paymentId is null")
+        void shouldThrowExceptionWhenIdIsNull() {
+            assertThrows(PaymentNullParameterException.class, () ->
+                    paymentService.changePaymentStatus(null, Status.SUCCESS)
+            );
+            verifyNoInteractions(paymentRepository, paymentMapper);
+        }
+
+        @Test
+        @DisplayName("Should throw PaymentNullParameterException when status is null")
+        void shouldThrowExceptionWhenStatusIsNull() {
+            assertThrows(PaymentNullParameterException.class, () ->
+                    paymentService.changePaymentStatus("some-id", null)
+            );
+            verifyNoInteractions(paymentRepository, paymentMapper);
+        }
+
+        @Test
+        @DisplayName("Should throw PaymentNotFoundException when payment does not exist")
+        void shouldThrowExceptionWhenPaymentNotFound() {
+            String id = "non-existent-id";
+            when(paymentRepository.findById(id)).thenReturn(Optional.empty());
+
+            assertThrows(PaymentNotFoundException.class, () ->
+                    paymentService.changePaymentStatus(id, Status.SUCCESS)
+            );
+
+            verify(paymentRepository).findById(id);
+            verify(paymentRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Should successfully change status and return DTO")
+        void shouldChangeStatusSuccessfully() {
+            String id = "Mongo_ID";
+            Status newStatus = Status.FAILED;
+
+            when(paymentRepository.findById(id)).thenReturn(Optional.of(payment));
+            when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            PaymentResponseDto expectedResponse = new PaymentResponseDto(
+                    payment.getUserId(),
+                    payment.getOrderId(),
+                    newStatus,
+                    payment.getPaymentAmount()
+            );
+
+            when(paymentMapper.toResponseDto(any(Payment.class))).thenReturn(expectedResponse);
+
+            PaymentResponseDto result = paymentService.changePaymentStatus(id, newStatus);
+
+            assertNotNull(result);
+            assertEquals(newStatus, result.status());
+
+            verify(paymentRepository).save(argThat(p -> p.getStatus() == newStatus));
+            verify(paymentMapper).toResponseDto(argThat(p -> p.getStatus() == newStatus));
+        }
+    }
+
 
 
 
