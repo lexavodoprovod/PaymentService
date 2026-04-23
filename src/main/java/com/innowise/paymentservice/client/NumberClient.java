@@ -8,8 +8,8 @@ import java.util.List;
 
 @FeignClient(
         name = "random-number-api",
-        url = "http://www.randomnumberapi.com/api/v1.0",
-        path = "/random"
+        url = "${random-number-api.url}",
+        path = "/api/v1.0/random"
 )
 public interface NumberClient {
 

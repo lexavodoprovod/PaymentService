@@ -1,4 +1,4 @@
-package com.innowise.paymentservice;
+package com.innowise.paymentservice.controller;
 
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;

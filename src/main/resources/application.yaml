@@ -9,3 +9,5 @@ spring:
       database: ${DB_NAME}
       authentication-database: admin
       auto-index-creation: true
+random-number-api:
+  url: http://www.randomnumberapi.com
