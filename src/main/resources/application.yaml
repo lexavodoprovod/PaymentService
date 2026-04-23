@@ -11,3 +11,6 @@ spring:
       auto-index-creation: true
 random-number-api:
   url: http://www.randomnumberapi.com
+
+topic-name:
+  status: status-topic

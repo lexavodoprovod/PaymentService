@@ -89,6 +89,7 @@ class PaymentServiceImplTest {
                 .thenReturn(payment);
 
             PaymentResponseDto paymentResponseDto = new PaymentResponseDto(
+                    payment.getId(),
                     payment.getUserId(),
                     payment.getOrderId(),
                     payment.getStatus(),
@@ -221,6 +222,7 @@ class PaymentServiceImplTest {
             when(paymentRepository.findById(id)).thenReturn(Optional.of(payment));
 
             PaymentResponseDto expectedResponse = new PaymentResponseDto(
+                    payment.getId(),
                     payment.getUserId(),
                     payment.getOrderId(),
                     payment.getStatus(),
@@ -277,6 +279,7 @@ class PaymentServiceImplTest {
             Page<Payment> paymentPage = new PageImpl<>(payments, pageable, payments.size());
 
             PaymentResponseDto responseDto = new PaymentResponseDto(
+                    payment.getId(),
                     payment.getUserId(),
                     payment.getOrderId(),
                     payment.getStatus(),
@@ -340,6 +343,7 @@ class PaymentServiceImplTest {
             Page<Payment> paymentPage = new PageImpl<>(payments, pageable, payments.size());
 
             PaymentResponseDto responseDto = new PaymentResponseDto(
+                    payment.getId(),
                     payment.getUserId(),
                     payment.getOrderId(),
                     payment.getStatus(),
@@ -518,6 +522,7 @@ class PaymentServiceImplTest {
             when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             PaymentResponseDto expectedResponse = new PaymentResponseDto(
+                    payment.getId(),
                     payment.getUserId(),
                     payment.getOrderId(),
                     newStatus,
