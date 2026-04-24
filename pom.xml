@@ -18,7 +18,7 @@
 
         <java.version>21</java.version>
 
-        <sonar.projectKey></sonar.projectKey> <!--ДОБАВИТЬ-->
+        <sonar.projectKey>lexavodoprovod_PaymentService</sonar.projectKey>
         <sonar.organization>lexavodoprovod</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>

@@ -21,7 +21,7 @@ public class KafkaProducerConfig {
     private String bootstrapServers;
 
 
-    public Map<String, Object> producerConfigs() {
+    public Map<String, Object> producerConfig() {
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -32,7 +32,7 @@ public class KafkaProducerConfig {
 
     @Bean
     public ProducerFactory<String, PaymentEventDto> producerFactory() {
-        return new DefaultKafkaProducerFactory<>(producerConfigs());
+        return new DefaultKafkaProducerFactory<>(producerConfig());
     }
 
     @Bean
