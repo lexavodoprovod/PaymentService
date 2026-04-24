@@ -8,15 +8,17 @@ import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.LocalDateTime;
 
+import static com.innowise.paymentservice.constant.DbParameters.*;
+
 @Getter
 @Setter
 public class BaseEntity {
 
     @CreatedDate
-    @Field(name = "created_at")
+    @Field(name = CREATED_AT_FIELD)
     private LocalDateTime createdAt;
 
     @LastModifiedDate
-    @Field(name = "updated_at")
+    @Field(name = UPDATED_AT_FIELD)
     private LocalDateTime updatedAt;
 }

@@ -6,32 +6,34 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import static com.innowise.paymentservice.constant.DbParameters.*;
+
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Getter@Setter
-@Document(collection = "payments")
+@Document(collection = PAYMENTS_COLLECTION_NAME)
 public class Payment extends BaseEntity{
 
     @Id
     private String id;
 
     @Indexed
-    @Field(name = "user_id")
+    @Field(name = USER_ID_FIELD)
     private Long userId;
 
     @Indexed(unique = true)
-    @Field(name = "order_id")
+    @Field(name = ORDER_ID_FIELD)
     private Long orderId;
 
     @Builder.Default
     private Status status = Status.PENDING;
 
-    @Field(name = "payment_amount")
+    @Field(name = PAYMENT_AMOUNT_FIELD)
     private Long paymentAmount;
 
     @Builder.Default
-    @Field(name = "deleted")
+    @Field(name = DELETED_FIELD)
     @Indexed
     private boolean isDeleted = false;
 }

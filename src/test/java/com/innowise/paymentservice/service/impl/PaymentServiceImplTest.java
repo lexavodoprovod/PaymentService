@@ -104,7 +104,7 @@ class PaymentServiceImplTest {
             assertNotNull(responseDto);
             assertEquals(paymentResponseDto, responseDto);
 
-            assertTrue(responseDto.status() == Status.SUCCESS);
+            assertSame(Status.SUCCESS, responseDto.status());
 
             verify(paymentRepository).save(argThat(p -> p.getStatus().equals(Status.SUCCESS)));
         }
@@ -378,10 +378,10 @@ class PaymentServiceImplTest {
             paymentService.findPaymentsByUserIdOrOrderIdOrStatus(userId, orderId, status, pageable);
 
             verify(customPaymentRepository).getPaymentsByUserIdOrOrderIdOrStatus(
-                    eq(userId),
-                    eq(orderId),
-                    eq(status),
-                    eq(pageable)
+                    userId,
+                    orderId,
+                    status,
+                    pageable
             );
         }
     }

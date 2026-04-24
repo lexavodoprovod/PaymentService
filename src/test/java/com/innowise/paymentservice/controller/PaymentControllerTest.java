@@ -62,11 +62,6 @@ class PaymentControllerTest extends BaseIT{
         mongoTemplate.getCollectionNames().forEach(coll -> mongoTemplate.dropCollection(coll));
     }
 
-    @Test
-    void debugUrl(){
-        System.out.println("DEBUG URL: " + env.getProperty("random-number-api.url"));
-    }
-
     @Nested
     @DisplayName("Add Payment Integration Tests")
     class AddPaymentIntegrationTests {

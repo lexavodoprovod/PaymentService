@@ -22,6 +22,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.innowise.paymentservice.constant.DbParameters.*;
+
 @Repository
 @RequiredArgsConstructor
 public class CustomPaymentRepositoryImpl implements CustomPaymentRepository {
@@ -32,18 +34,18 @@ public class CustomPaymentRepositoryImpl implements CustomPaymentRepository {
     public Long getTotalSumForDateRange(LocalDateTime start, LocalDateTime end, Long userId) {
 
         List<Criteria> criteriaList = new ArrayList<>();
-        criteriaList.add(Criteria.where("deleted").is(false));
+        criteriaList.add(Criteria.where(DELETED_FIELD).is(false));
 
         if(start != null){
-            criteriaList.add(Criteria.where("created_at").gte(start));
+            criteriaList.add(Criteria.where(CREATED_AT_FIELD).gte(start));
         }
 
         if(end != null){
-            criteriaList.add(Criteria.where("created_at").lte(end));
+            criteriaList.add(Criteria.where(CREATED_AT_FIELD).lte(end));
         }
 
         if(userId != null){
-            criteriaList.add(Criteria.where("user_id").is(userId));
+            criteriaList.add(Criteria.where(USER_ID_FIELD).is(userId));
         }
 
         Criteria mainCriteria = new Criteria();
@@ -53,14 +55,14 @@ public class CustomPaymentRepositoryImpl implements CustomPaymentRepository {
 
         MatchOperation matchStage = Aggregation.match(mainCriteria);
 
-        GroupOperation groupStage = Aggregation.group().sum("payment_amount").as("total");
+        GroupOperation groupStage = Aggregation.group().sum(PAYMENT_AMOUNT_FIELD).as(TOTAL_FIELD);
 
         Aggregation aggregation = Aggregation.newAggregation(matchStage, groupStage);
 
-        AggregationResults<Document> result = mongoTemplate.aggregate(aggregation, "payments", Document.class);
+        AggregationResults<Document> result = mongoTemplate.aggregate(aggregation, PAYMENTS_COLLECTION_NAME, Document.class);
 
         return result.getUniqueMappedResult() != null
-                ? result.getUniqueMappedResult().getLong("total")
+                ? result.getUniqueMappedResult().getLong(TOTAL_FIELD)
                 : 0L;
 
     }
@@ -68,20 +70,20 @@ public class CustomPaymentRepositoryImpl implements CustomPaymentRepository {
     @Override
     public Page<Payment> getPaymentsByUserIdOrOrderIdOrStatus(Long userId, Long orderId, String status, Pageable pageable) {
 
-        Criteria mainCriteria = Criteria.where("deleted").is(false);
+        Criteria mainCriteria = Criteria.where(DELETED_FIELD).is(false);
 
         List<Criteria> criteriaList = new ArrayList<>();
 
         if(userId != null){
-            criteriaList.add(Criteria.where("user_id").is(userId));
+            criteriaList.add(Criteria.where(USER_ID_FIELD).is(userId));
         }
 
         if(orderId != null){
-            criteriaList.add(Criteria.where("order_id").is(orderId));
+            criteriaList.add(Criteria.where(ORDER_ID_FIELD).is(orderId));
         }
 
         if(status != null){
-            criteriaList.add(Criteria.where("status").is(status));
+            criteriaList.add(Criteria.where(STATUS_FIELD).is(status));
         }
 
         if(!criteriaList.isEmpty()){
@@ -101,12 +103,12 @@ public class CustomPaymentRepositoryImpl implements CustomPaymentRepository {
 
     @Override
     public boolean softDelete(String id) {
-        Criteria criteria = Criteria.where("id").is(id);
+        Criteria criteria = Criteria.where(ID_FIELD).is(id);
 
         Query query = new Query(criteria);
 
         Update update = new Update();
-        update.set("deleted", true);
+        update.set(DELETED_FIELD, true);
 
         UpdateResult result = mongoTemplate.updateFirst(query, update, Payment.class);
         return result.getModifiedCount() > 0;
