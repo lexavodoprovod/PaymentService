@@ -47,15 +47,13 @@ class KafkaMessageControllerTest extends BaseIT {
 
     @Container
     static KafkaContainer kafka = new KafkaContainer(DockerImageName
-            .parse("confluentinc/cp-kafka:7.5.0")
-            .asCompatibleSubstituteFor("apache/kafka"))
-            .withKraft()
+            .parse("confluentinc/cp-kafka:7.5.0"))
             .withStartupTimeout(Duration.ofMinutes(3));
 
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.kafka.bootstrap-servers", kafka::getBootstrapServers);
-    }
+        @DynamicPropertySource
+        static void configureProperties(DynamicPropertyRegistry registry) {
+            registry.add("spring.kafka.bootstrap-servers", kafka::getBootstrapServers);
+        }
 
     @Nested
     @DisplayName("Kafka Message Integration Tests")

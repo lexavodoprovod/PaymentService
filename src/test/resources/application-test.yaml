@@ -4,3 +4,9 @@ spring:
       database: payment_test
   kafka:
     bootstrap-servers:
+  cloud:
+    discovery:
+      enabled: false
+eureka:
+  client:
+    enabled: false

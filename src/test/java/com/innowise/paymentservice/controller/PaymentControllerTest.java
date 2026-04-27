@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -43,9 +42,6 @@ class PaymentControllerTest extends BaseIT{
     private PaymentRepository paymentRepository;
 
     private static final String CONTROLLER_PATH = "/api/v1/payments";
-
-    @Autowired
-    private Environment env;
 
     @RegisterExtension
     static WireMockExtension wireMock = WireMockExtension.newInstance()

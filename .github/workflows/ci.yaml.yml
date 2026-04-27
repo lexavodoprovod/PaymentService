@@ -25,10 +25,6 @@ jobs:
 
       - name: Build and Test with Maven
         run: mvn clean verify
-        env:
-          DB_NAME: payment_db
-          DB_USERNAME: test_password
-          DB_PASSWORD: test_user
 
       - name: SonarQube Analysis
         env:
