@@ -26,9 +26,11 @@ public class Payment extends BaseEntity{
     @Field(name = ORDER_ID_FIELD)
     private Long orderId;
 
+    @Indexed
     @Builder.Default
     private Status status = Status.PENDING;
 
+    @Indexed
     @Field(name = PAYMENT_AMOUNT_FIELD)
     private Long paymentAmount;
 

@@ -3,6 +3,6 @@ spring:
     mongodb:
       host: payment-db
   kafka:
-    bootstrap-servers: kafka:9092
+    bootstrap-servers: kafka-service:9092
 server:
   port: 8080

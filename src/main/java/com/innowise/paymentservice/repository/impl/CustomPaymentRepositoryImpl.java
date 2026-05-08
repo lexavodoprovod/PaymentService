@@ -37,11 +37,11 @@ public class CustomPaymentRepositoryImpl implements CustomPaymentRepository {
         criteriaList.add(Criteria.where(DELETED_FIELD).is(false));
 
         if(start != null){
-            criteriaList.add(Criteria.where(CREATED_AT_FIELD).gte(start));
+            criteriaList.add(Criteria.where(TIMESTAMP_FIELD).gte(start));
         }
 
         if(end != null){
-            criteriaList.add(Criteria.where(CREATED_AT_FIELD).lte(end));
+            criteriaList.add(Criteria.where(TIMESTAMP_FIELD).lte(end));
         }
 
         if(userId != null){

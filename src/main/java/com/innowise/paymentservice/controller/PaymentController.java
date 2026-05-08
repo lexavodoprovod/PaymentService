@@ -3,7 +3,7 @@ package com.innowise.paymentservice.controller;
 import com.innowise.paymentservice.dto.request.PaymentRequestDto;
 import com.innowise.paymentservice.dto.response.PaymentResponseDto;
 import com.innowise.paymentservice.entity.Status;
-import com.innowise.paymentservice.service.impl.PaymentServiceImpl;
+import com.innowise.paymentservice.service.PaymentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -29,7 +29,7 @@ public class PaymentController {
     private static final int PAGINATION_SIZE = 15;
     private static final String SORT_BY = "id";
 
-    private final PaymentServiceImpl paymentService;
+    private final PaymentService paymentService;
 
     /**
      * Creates a new payment record.

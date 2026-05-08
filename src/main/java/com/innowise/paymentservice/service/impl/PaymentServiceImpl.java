@@ -9,8 +9,8 @@ import com.innowise.paymentservice.exception.payment.PaymentAlreadyExistExceptio
 import com.innowise.paymentservice.exception.payment.PaymentNotFoundException;
 import com.innowise.paymentservice.exception.payment.PaymentNullParameterException;
 import com.innowise.paymentservice.mapper.PaymentMapper;
+import com.innowise.paymentservice.repository.CustomPaymentRepository;
 import com.innowise.paymentservice.repository.PaymentRepository;
-import com.innowise.paymentservice.repository.impl.CustomPaymentRepositoryImpl;
 import com.innowise.paymentservice.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,7 +26,7 @@ import static com.innowise.paymentservice.constant.SettingsForNumberClient.*;
 public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
-    private final CustomPaymentRepositoryImpl customPaymentRepository;
+    private final CustomPaymentRepository customPaymentRepository;
     private final PaymentMapper paymentMapper;
     private final NumberClient numberClient;
 
