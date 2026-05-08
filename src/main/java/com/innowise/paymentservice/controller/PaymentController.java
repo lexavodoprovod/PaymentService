@@ -82,9 +82,9 @@ public class PaymentController {
      */
     @GetMapping("/search")
     public ResponseEntity<Page<PaymentResponseDto>> getPaymentsByUserIdOrOrderIdOrStatus(
-            @RequestParam Long userId,
-            @RequestParam Long orderId,
-            @RequestParam Status status,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) Long orderId,
+            @RequestParam(required = false) Status status,
             @PageableDefault(size = PAGINATION_SIZE, sort = SORT_BY) Pageable pageable
     ){
         Page<PaymentResponseDto> responseDtoPage = paymentService.findPaymentsByUserIdOrOrderIdOrStatus(
@@ -106,9 +106,9 @@ public class PaymentController {
      */
     @GetMapping("/sum")
     public ResponseEntity<Long> getSumByDateRange(
-            @RequestParam LocalDateTime start,
-            @RequestParam LocalDateTime end,
-            @RequestParam Long userId
+            @RequestParam(required = false) LocalDateTime start,
+            @RequestParam(required = false) LocalDateTime end,
+            @RequestParam(required = false) Long userId
     ){
         Long sum = paymentService.getTotalSumForDateRange(start, end, userId);
         return ResponseEntity.ok(sum);
