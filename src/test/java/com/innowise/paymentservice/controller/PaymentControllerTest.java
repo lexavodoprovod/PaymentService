@@ -290,11 +290,11 @@ class PaymentControllerTest extends BaseIT{
 
             Payment payment1 = Payment.builder()
                     .userId(userId).orderId(101L).paymentAmount(100L).status(Status.SUCCESS).build();
-            payment1.setCreatedAt(LocalDateTime.now().minusDays(2));
+            payment1.setTimestamp(LocalDateTime.now().minusDays(2));
 
             Payment payment2 = Payment.builder()
                     .userId(userId).orderId(101L).paymentAmount(100L).status(Status.SUCCESS).build();
-            payment2.setCreatedAt(LocalDateTime.now().minusDays(1));
+            payment2.setTimestamp(LocalDateTime.now().minusDays(1));
 
             paymentRepository.saveAll(List.of(payment1, payment2));
 
