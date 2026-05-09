@@ -12,12 +12,12 @@ import java.util.Optional;
 @Repository
 public interface PaymentRepository extends MongoRepository<Payment, String> {
 
-    @Query("{ 'deleted' :  false}")
+    @Query("{ '_id' : ?0, 'deleted' : false }")
     Optional<Payment> findById(String id);
 
     @Query("{ 'deleted' : false}")
     Page<Payment> findAll(Pageable pageable);
 
-    @Query("{ 'deleted' : false}")
+    @Query("{ 'order_id' : ?0, 'deleted' : false }")
     Optional<Payment> findByOrderId(Long orderId);
 }

@@ -10,7 +10,7 @@ spring:
       authentication-database: admin
       auto-index-creation: true
 random-number-api:
-  url: http://www.randomnumberapi.com
+  url: https://www.randomnumberapi.com
 
 topic-name:
   status: payment-create-topic
