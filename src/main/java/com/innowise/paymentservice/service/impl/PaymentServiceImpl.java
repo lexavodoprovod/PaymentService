@@ -1,8 +1,10 @@
 package com.innowise.paymentservice.service.impl;
 
 import com.innowise.paymentservice.client.NumberClient;
+import com.innowise.paymentservice.dto.kafkadto.PaymentEventDto;
 import com.innowise.paymentservice.dto.request.PaymentRequestDto;
 import com.innowise.paymentservice.dto.response.PaymentResponseDto;
+import com.innowise.paymentservice.entity.EventType;
 import com.innowise.paymentservice.entity.Payment;
 import com.innowise.paymentservice.entity.Status;
 import com.innowise.paymentservice.exception.payment.PaymentAlreadyExistException;
@@ -13,8 +15,10 @@ import com.innowise.paymentservice.repository.CustomPaymentRepository;
 import com.innowise.paymentservice.repository.PaymentRepository;
 import com.innowise.paymentservice.service.PaymentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -29,6 +33,11 @@ public class PaymentServiceImpl implements PaymentService {
     private final CustomPaymentRepository customPaymentRepository;
     private final PaymentMapper paymentMapper;
     private final NumberClient numberClient;
+    private final KafkaTemplate<String, PaymentEventDto> kafkaTemplate;
+
+    @Value("${topic-name.status}")
+    private String statusTopicName;
+
 
 
     @Override
@@ -61,6 +70,16 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         Payment savedPayment = paymentRepository.save(payment);
+
+        PaymentEventDto eventDto = PaymentEventDto.builder()
+                .eventType(EventType.CREATE_PAYMENT)
+                .paymentId(savedPayment.getId())
+                .status(savedPayment.getStatus())
+                .orderId(orderId)
+                .build();
+
+        kafkaTemplate.send(statusTopicName, eventDto);
+
 
         return paymentMapper.toResponseDto(savedPayment);
     }
