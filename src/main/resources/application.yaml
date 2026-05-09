@@ -14,3 +14,10 @@ random-number-api:
 
 topic-name:
   status: payment-create-topic
+
+management:
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
