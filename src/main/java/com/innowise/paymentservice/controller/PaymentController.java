@@ -16,11 +16,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 
-/**
- * REST controller for managing payment resources.
- * Provides endpoints for creating, retrieving, searching, and updating payments.
- * All responses are returned in JSON format.
- */
 @RestController
 @RequestMapping(value = "/api/v1/payments", produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
