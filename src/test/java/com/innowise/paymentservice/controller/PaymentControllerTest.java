@@ -46,7 +46,7 @@ class PaymentControllerTest extends BaseIT{
     @Autowired
     private PaymentRepository paymentRepository;
 
-    private static String topicName = "status-topic";
+    private static String topicName = "payment-create-topic";
 
     private static Consumer<String, PaymentEventDto> consumer;
 
