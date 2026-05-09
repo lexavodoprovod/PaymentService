@@ -1,30 +1,35 @@
 package com.innowise.paymentservice.controller;
 
-import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import com.innowise.paymentservice.dto.kafkadto.PaymentEventDto;
 import com.innowise.paymentservice.dto.request.PaymentRequestDto;
 import com.innowise.paymentservice.entity.Payment;
 import com.innowise.paymentservice.entity.Status;
 import com.innowise.paymentservice.repository.PaymentRepository;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.junit.jupiter.api.Assertions.*;
 
 class PaymentControllerTest extends BaseIT{
@@ -41,21 +46,34 @@ class PaymentControllerTest extends BaseIT{
     @Autowired
     private PaymentRepository paymentRepository;
 
+    private static String topicName = "status-topic";
+
+    private static Consumer<String, PaymentEventDto> consumer;
+
     private static final String CONTROLLER_PATH = "/api/v1/payments";
 
-    @RegisterExtension
-    static WireMockExtension wireMock = WireMockExtension.newInstance()
-            .options(wireMockConfig().port(8090))
-            .build();
 
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("random-number-api.url", wireMock::baseUrl);
+    @BeforeAll
+    static void beforeAll() {
+        consumer = createTestConsumer();
+        consumer.subscribe(Collections.singleton(topicName));
+    }
+
+    @AfterAll
+    static void afterAll() {
+        if(consumer != null) {
+            consumer.close();
+        }
     }
 
     @BeforeEach
     void beforeEach() {
         mongoTemplate.getCollectionNames().forEach(coll -> mongoTemplate.dropCollection(coll));
+
+        consumer.poll(Duration.ofMillis(100));
+        Set<TopicPartition> assignment = consumer.assignment();
+        consumer.seekToEnd(assignment);
+        assignment.forEach(tp -> consumer.position(tp));
     }
 
     @Nested
@@ -63,12 +81,14 @@ class PaymentControllerTest extends BaseIT{
     class AddPaymentIntegrationTests {
 
         @Test
-        @DisplayName("Should create payment successfully with status SUCCESS")
-        void shouldCreatePaymentSuccessfullyStatusSuccess() throws Exception {
+        @DisplayName("Should create payment and publish event with SUCCESS to Kafka")
+        void shouldCreatePaymentAndSendKafkaEvent() throws Exception {
             PaymentRequestDto paymentRequestDto = new PaymentRequestDto(1L, 1L, 1000L);
 
             wireMock.stubFor(get(urlPathMatching("/api/v1.0/random.*"))
                     .willReturn(okJson("[20]")));
+
+
 
             mockMvc.perform(MockMvcRequestBuilders.post(CONTROLLER_PATH)
                     .contentType(MediaType.APPLICATION_JSON)
@@ -78,10 +98,18 @@ class PaymentControllerTest extends BaseIT{
                     .andExpect(MockMvcResultMatchers.jsonPath("$.orderId").value(1))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(Status.SUCCESS.name()))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.paymentAmount").value(1000));
+
+            ConsumerRecord<String, PaymentEventDto> receivedRecord =
+                    KafkaTestUtils.getSingleRecord(consumer, topicName, Duration.ofSeconds(5));
+
+            assertNotNull(receivedRecord);
+            assertEquals(paymentRequestDto.orderId(), receivedRecord.value().getOrderId());
+            assertEquals(Status.SUCCESS, receivedRecord.value().getStatus());
+
         }
 
         @Test
-        @DisplayName("Should create payment successfully with status FAILED")
+        @DisplayName("Should create payment and publish event with FAILED to Kafka")
         void shouldCreatePaymentSuccessfullyStatusFailed() throws Exception {
             PaymentRequestDto paymentRequestDto = new PaymentRequestDto(1L, 1L, 1000L);
 
@@ -96,6 +124,14 @@ class PaymentControllerTest extends BaseIT{
                     .andExpect(MockMvcResultMatchers.jsonPath("$.orderId").value(1))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(Status.FAILED.name()))
                     .andExpect(MockMvcResultMatchers.jsonPath("$.paymentAmount").value(1000));
+
+            ConsumerRecord<String, PaymentEventDto> receivedRecord =
+                    KafkaTestUtils.getSingleRecord(consumer, topicName, Duration.ofSeconds(5));
+
+            assertNotNull(receivedRecord);
+            assertEquals(paymentRequestDto.orderId(), receivedRecord.value().getOrderId());
+            assertEquals(Status.FAILED, receivedRecord.value().getStatus());
+
         }
 
         @Test
@@ -411,5 +447,26 @@ class PaymentControllerTest extends BaseIT{
                     .andExpect(MockMvcResultMatchers.status().isNotFound());
         }
 
+    }
+
+    private static Consumer<String, PaymentEventDto> createTestConsumer() {
+        String uniqueGroupId = "test-group-" + java.util.UUID.randomUUID();
+
+        Map<String, Object> consumerProps = KafkaTestUtils.consumerProps(
+                kafka.getBootstrapServers(),
+                uniqueGroupId,
+                "true"
+        );
+
+        consumerProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+
+        JsonDeserializer<PaymentEventDto> jsonDeserializer = new JsonDeserializer<>(PaymentEventDto.class);
+        jsonDeserializer.addTrustedPackages("*");
+
+        return new DefaultKafkaConsumerFactory<>(
+                consumerProps,
+                new StringDeserializer(),
+                jsonDeserializer
+        ).createConsumer();
     }
 }

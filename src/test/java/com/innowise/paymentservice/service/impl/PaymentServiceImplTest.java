@@ -1,8 +1,10 @@
 package com.innowise.paymentservice.service.impl;
 
 import com.innowise.paymentservice.client.NumberClient;
+import com.innowise.paymentservice.dto.kafkadto.PaymentEventDto;
 import com.innowise.paymentservice.dto.request.PaymentRequestDto;
 import com.innowise.paymentservice.dto.response.PaymentResponseDto;
+import com.innowise.paymentservice.entity.EventType;
 import com.innowise.paymentservice.entity.Payment;
 import com.innowise.paymentservice.entity.Status;
 import com.innowise.paymentservice.exception.payment.PaymentAlreadyExistException;
@@ -23,6 +25,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -46,9 +50,13 @@ class PaymentServiceImplTest {
     @Mock
     private NumberClient numberClient;
 
+    @Mock
+    private KafkaTemplate<String, PaymentEventDto> kafkaTemplate;
+
     @InjectMocks
     private PaymentServiceImpl paymentService;
 
+    private String topicName = "status-topic";
 
     private PaymentRequestDto paymentRequestDto;
 
@@ -56,6 +64,8 @@ class PaymentServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        ReflectionTestUtils.setField(paymentService, "statusTopicName", topicName);
+
         paymentRequestDto = new PaymentRequestDto(1L, 1L, 1000L);
 
         payment = Payment.builder()
@@ -72,118 +82,97 @@ class PaymentServiceImplTest {
     class CreatePaymentTests {
 
         @Test
-        @DisplayName("Should create payment correctly")
-        void createPayment() {
-            when(paymentRepository.findByOrderId(paymentRequestDto.orderId()))
-                    .thenReturn(Optional.empty());
+        @DisplayName("Should create payment with SUCCESS status and send Kafka event")
+        void createPaymentSuccessfully() {
+            Long orderId = paymentRequestDto.orderId();
+            String paymentId = "test-payment-id";
 
-            when(paymentMapper.toEntity(paymentRequestDto))
-                    .thenReturn(payment);
-
-            when(numberClient.getRandomNumber(MIN, MAX, COUNT))
-                    .thenReturn(List.of(20));
-
-            payment.setStatus(Status.SUCCESS);
-
-            when(paymentRepository.save(payment))
-                .thenReturn(payment);
-
-            PaymentResponseDto paymentResponseDto = new PaymentResponseDto(
-                    payment.getId(),
-                    payment.getUserId(),
-                    payment.getOrderId(),
-                    payment.getStatus(),
-                    payment.getPaymentAmount());
-
-            when(paymentMapper.toResponseDto(payment))
-                    .thenReturn(paymentResponseDto);
-
-
-            PaymentResponseDto responseDto = paymentService.createPayment(paymentRequestDto);
-
-            assertNotNull(responseDto);
-            assertEquals(paymentResponseDto, responseDto);
-
-            assertSame(Status.SUCCESS, responseDto.status());
-
-            verify(paymentRepository).save(argThat(p -> p.getStatus().equals(Status.SUCCESS)));
-        }
-
-        @Test
-        @DisplayName("Should throw PaymentNullParameterException when DTO is null")
-        void shouldThrowExceptionWhenRequestIsNull() {
-            assertThrows(PaymentNullParameterException.class, () ->
-                    paymentService.createPayment(null)
-            );
-            verifyNoInteractions(paymentRepository, paymentMapper, numberClient);
-        }
-
-        @Test
-        @DisplayName("Should throw PaymentAlreadyExistException when orderId already exists")
-        void shouldThrowExceptionWhenOrderIdExists() {
-            when(paymentRepository.findByOrderId(paymentRequestDto.orderId()))
-                    .thenReturn(Optional.of(payment));
-
-            assertThrows(PaymentAlreadyExistException.class, () ->
-                    paymentService.createPayment(paymentRequestDto)
-            );
-
-            verify(paymentRepository, never()).save(any());
-        }
-
-        @Test
-        @DisplayName("Should set SUCCESS status when random number is even")
-        void shouldSetSuccessStatusWhenNumberIsEven() {
-            when(paymentRepository.findByOrderId(paymentRequestDto.orderId())).thenReturn(Optional.empty());
+            when(paymentRepository.findByOrderId(orderId)).thenReturn(Optional.empty());
             when(paymentMapper.toEntity(paymentRequestDto)).thenReturn(payment);
-            when(numberClient.getRandomNumber(MIN, MAX, COUNT)).thenReturn(List.of(100));
-            when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(numberClient.getRandomNumber(MIN, MAX, COUNT)).thenReturn(List.of(20));
 
-            paymentService.createPayment(paymentRequestDto);
+            payment.setId(paymentId);
+            when(paymentRepository.save(any(Payment.class))).thenReturn(payment);
+
+            PaymentResponseDto expectedResponse = new PaymentResponseDto(
+                    paymentId, payment.getUserId(), orderId, Status.SUCCESS, payment.getPaymentAmount());
+            when(paymentMapper.toResponseDto(payment)).thenReturn(expectedResponse);
+
+            PaymentResponseDto actualResponse = paymentService.createPayment(paymentRequestDto);
+
+            assertNotNull(actualResponse);
+            assertEquals(Status.SUCCESS, actualResponse.status());
+
+            verify(kafkaTemplate).send(eq(topicName), argThat(event ->
+                    event.getEventType() == EventType.CREATE_PAYMENT &&
+                            event.getPaymentId().equals(paymentId) &&
+                            event.getStatus() == Status.SUCCESS &&
+                            event.getOrderId().equals(orderId)
+            ));
 
             verify(paymentRepository).save(argThat(p -> p.getStatus() == Status.SUCCESS));
         }
 
         @Test
-        @DisplayName("Should set FAILED status when random number is odd")
+        @DisplayName("Should set FAILED status and send Kafka event when number is odd")
         void shouldSetFailedStatusWhenNumberIsOdd() {
-            when(paymentRepository.findByOrderId(paymentRequestDto.orderId())).thenReturn(Optional.empty());
-            when(paymentMapper.toEntity(paymentRequestDto)).thenReturn(payment);
+            when(paymentRepository.findByOrderId(any())).thenReturn(Optional.empty());
+            when(paymentMapper.toEntity(any())).thenReturn(payment);
             when(numberClient.getRandomNumber(MIN, MAX, COUNT)).thenReturn(List.of(101));
-            when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(paymentRepository.save(any())).thenReturn(payment);
 
             paymentService.createPayment(paymentRequestDto);
 
             verify(paymentRepository).save(argThat(p -> p.getStatus() == Status.FAILED));
+            verify(kafkaTemplate).send(eq(topicName), argThat(event -> event.getStatus() == Status.FAILED));
         }
 
         @Test
         @DisplayName("Should set FAILED status when numberClient throws exception")
         void shouldSetFailedStatusWhenClientFails() {
-            when(paymentRepository.findByOrderId(paymentRequestDto.orderId())).thenReturn(Optional.empty());
-            when(paymentMapper.toEntity(paymentRequestDto)).thenReturn(payment);
-
-            when(numberClient.getRandomNumber(MIN, MAX, COUNT)).thenThrow(new RuntimeException("API error"));
-
-            when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(paymentRepository.findByOrderId(any())).thenReturn(Optional.empty());
+            when(paymentMapper.toEntity(any())).thenReturn(payment);
+            when(numberClient.getRandomNumber(MIN, MAX, COUNT)).thenThrow(new RuntimeException("API Error"));
+            when(paymentRepository.save(any())).thenReturn(payment);
 
             paymentService.createPayment(paymentRequestDto);
 
             verify(paymentRepository).save(argThat(p -> p.getStatus() == Status.FAILED));
+            verify(kafkaTemplate).send(eq(topicName), argThat(event -> event.getStatus() == Status.FAILED));
         }
 
         @Test
-        @DisplayName("Should set FAILED status when numberClient returns empty list")
-        void shouldSetFailedStatusWhenClientReturnsEmptyList() {
-            when(paymentRepository.findByOrderId(paymentRequestDto.orderId())).thenReturn(Optional.empty());
-            when(paymentMapper.toEntity(paymentRequestDto)).thenReturn(payment);
-            when(numberClient.getRandomNumber(MIN, MAX, COUNT)).thenReturn(List.of());
+        @DisplayName("Should throw PaymentNullParameterException when DTO is null")
+        void shouldThrowExceptionWhenRequestIsNull() {
+            assertThrows(PaymentNullParameterException.class, () -> paymentService.createPayment(null));
+            verifyNoInteractions(paymentRepository, kafkaTemplate);
+        }
 
-            when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        @Test
+        @DisplayName("Should throw PaymentAlreadyExistException when orderId exists")
+        void shouldThrowExceptionWhenOrderIdExists() {
+            when(paymentRepository.findByOrderId(paymentRequestDto.orderId()))
+                    .thenReturn(Optional.of(payment));
+
+            assertThrows(PaymentAlreadyExistException.class, () -> paymentService.createPayment(paymentRequestDto));
+
+            verify(paymentRepository, never()).save(any());
+            verifyNoInteractions(kafkaTemplate);
+        }
+
+        @Test
+        @DisplayName("Should set FAILED status when numberClient returns empty list (IndexOutOfBounds)")
+        void shouldSetFailedStatusWhenListIsEmpty() {
+
+            when(paymentRepository.findByOrderId(any())).thenReturn(Optional.empty());
+            when(paymentMapper.toEntity(any())).thenReturn(payment);
+            when(numberClient.getRandomNumber(MIN, MAX, COUNT)).thenReturn(List.of());
+            when(paymentRepository.save(any())).thenReturn(payment);
 
             paymentService.createPayment(paymentRequestDto);
 
             verify(paymentRepository).save(argThat(p -> p.getStatus() == Status.FAILED));
+            verify(kafkaTemplate).send(any(), argThat(event -> event.getStatus() == Status.FAILED));
         }
     }
 
