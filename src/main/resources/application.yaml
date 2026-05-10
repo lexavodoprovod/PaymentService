@@ -1,3 +1,23 @@
 spring:
   application:
-    name: PaymentService
+    name: payment-service
+  data:
+    mongodb:
+      port: 27017
+      username: ${DB_USERNAME}
+      password: ${DB_PASSWORD}
+      database: ${DB_NAME}
+      authentication-database: admin
+      auto-index-creation: true
+random-number-api:
+  url: https://www.randomnumberapi.com
+
+topic-name:
+  status: payment-create-topic
+
+management:
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
