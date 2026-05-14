@@ -59,7 +59,7 @@ public class PaymentServiceImpl implements PaymentService {
         log.info("Order with that id not found: {}", orderId);
 
         Payment payment = paymentMapper.toEntity(paymentRequestDto);
-        log.info("PaymentRequestDto mapped to Payment: {}", payment);
+        log.info("PaymentRequestDto mapped to Payment:{}", payment);
 
         try{
             log.info("Try to get number from numberClient");
