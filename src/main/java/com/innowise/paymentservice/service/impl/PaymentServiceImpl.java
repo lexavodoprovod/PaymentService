@@ -15,6 +15,7 @@ import com.innowise.paymentservice.repository.CustomPaymentRepository;
 import com.innowise.paymentservice.repository.PaymentRepository;
 import com.innowise.paymentservice.service.PaymentService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +28,7 @@ import static com.innowise.paymentservice.constant.SettingsForNumberClient.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
@@ -47,29 +49,39 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         Long orderId = paymentRequestDto.orderId();
+        log.info("Get Order Id: {}", orderId);
 
+        log.info("Start searching order with this id: {}", orderId);
         paymentRepository.findByOrderId(orderId)
                 .ifPresent(p -> {
                     throw new PaymentAlreadyExistException(orderId);
                 });
+        log.info("Order with that id not found: {}", orderId);
 
         Payment payment = paymentMapper.toEntity(paymentRequestDto);
+        log.info("PaymentRequestDto mapped to Payment: {}", payment);
 
         try{
+            log.info("Try to get number from numberClient");
             List<Integer> result = numberClient.getRandomNumber(MIN, MAX, COUNT);
-
+            log.info("Number from numberClient received");
             int currentNumber = result.getFirst();
+            log.info("Number is: {}", currentNumber);
 
             if(currentNumber % 2 == 0){
                 payment.setStatus(Status.SUCCESS);
+                log.info("Set payment status SUCCESS");
             }else{
                 payment.setStatus(Status.FAILED);
+                log.info("Set payment status FAILED");
             }
         }catch (Exception e){
             payment.setStatus(Status.FAILED);
+            log.info("Set payment status FAILED after exception");
         }
 
         Payment savedPayment = paymentRepository.save(payment);
+        log.info("Payment saved with id: {}", savedPayment.getId());
 
         PaymentEventDto eventDto = PaymentEventDto.builder()
                 .eventType(EventType.CREATE_PAYMENT)
@@ -77,10 +89,13 @@ public class PaymentServiceImpl implements PaymentService {
                 .status(savedPayment.getStatus())
                 .orderId(orderId)
                 .build();
+        log.info("Payment event created: {}", eventDto);
 
+        log.info("Try to send kafka event");
         kafkaTemplate.send(statusTopicName, eventDto);
+        log.info("Send kafka event successfully");
 
-
+        log.info("Mapping savedPayment to PaymentResponseDto");
         return paymentMapper.toResponseDto(savedPayment);
     }
 
