@@ -2,6 +2,7 @@ package com.innowise.paymentservice.controller;
 
 import com.innowise.paymentservice.dto.kafkadto.PaymentEventDto;
 import com.innowise.paymentservice.dto.request.PaymentRequestDto;
+import com.innowise.paymentservice.dto.request.UpdatePaymentStatusRequest;
 import com.innowise.paymentservice.entity.Payment;
 import com.innowise.paymentservice.entity.Status;
 import com.innowise.paymentservice.repository.PaymentRepository;
@@ -370,7 +371,7 @@ class PaymentControllerTest extends BaseIT{
             Payment savedPayment = mongoTemplate.save(payment);
             String id = savedPayment.getId();
 
-            Status newStatus = Status.SUCCESS;
+            UpdatePaymentStatusRequest newStatus = new UpdatePaymentStatusRequest(Status.SUCCESS);
 
             mockMvc.perform(MockMvcRequestBuilders.patch(CONTROLLER_PATH + "/{id}", id)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -390,7 +391,7 @@ class PaymentControllerTest extends BaseIT{
 
             mockMvc.perform(MockMvcRequestBuilders.patch(CONTROLLER_PATH + "/{id}", nonExistentId)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(Status.FAILED)))
+                            .content(objectMapper.writeValueAsString(new UpdatePaymentStatusRequest(Status.PENDING))))
                     .andExpect(MockMvcResultMatchers.status().isNotFound());
         }
 
