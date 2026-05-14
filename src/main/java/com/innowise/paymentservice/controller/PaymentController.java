@@ -82,10 +82,16 @@ public class PaymentController {
             @RequestParam(required = false) Status status,
             @PageableDefault(size = PAGINATION_SIZE, sort = SORT_BY) Pageable pageable
     ){
+        String statusName = null;
+
+        if(status != null){
+            statusName = status.name();
+        }
+
         Page<PaymentResponseDto> responseDtoPage = paymentService.findPaymentsByUserIdOrOrderIdOrStatus(
                 userId,
                 orderId,
-                status.name(),
+                statusName,
                 pageable
         );
         return ResponseEntity.ok(responseDtoPage);
