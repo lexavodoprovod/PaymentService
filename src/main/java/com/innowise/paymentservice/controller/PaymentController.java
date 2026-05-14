@@ -1,6 +1,7 @@
 package com.innowise.paymentservice.controller;
 
 import com.innowise.paymentservice.dto.request.PaymentRequestDto;
+import com.innowise.paymentservice.dto.request.UpdatePaymentStatusRequest;
 import com.innowise.paymentservice.dto.response.PaymentResponseDto;
 import com.innowise.paymentservice.entity.Status;
 import com.innowise.paymentservice.service.PaymentService;
@@ -125,9 +126,9 @@ public class PaymentController {
     @PatchMapping("/{id}")
     public ResponseEntity<PaymentResponseDto> changePaymentStatus(
             @PathVariable String id,
-            @RequestBody Status status
+            @RequestBody UpdatePaymentStatusRequest status
     ){
-        PaymentResponseDto paymentResponseDto = paymentService.changePaymentStatus(id, status);
+        PaymentResponseDto paymentResponseDto = paymentService.changePaymentStatus(id, status.getPaymentStatus());
         return ResponseEntity.ok(paymentResponseDto);
     }
 
